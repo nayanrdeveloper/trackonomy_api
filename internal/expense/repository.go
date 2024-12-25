@@ -13,6 +13,7 @@ type Repository interface {
 	GetByID(id uint) (*Expense, error)
 	Update(expense *Expense) error
 	Delete(id uint) error
+	GetByUserID(userID uint) ([]Expense, error)
 }
 
 type repository struct {
@@ -69,4 +70,13 @@ func (r *repository) Delete(id uint) error {
 		return errors.New("invalid ID")
 	}
 	return r.db.Delete(&Expense{}, id).Error
+}
+
+func (r *repository) GetByUserID(userID uint) ([]Expense, error) {
+	var expenses []Expense
+	err := r.db.Where("user_id = ?", userID).Find(&expenses).Error
+	if err != nil {
+		return nil, err
+	}
+	return expenses, nil
 }
