@@ -10,6 +10,7 @@ type Service interface {
 	GetExpenseByID(id uint) (*Expense, error)
 	UpdateExpense(expense *Expense) error
 	DeleteExpense(id uint) error
+	GetExpensesByUser(userID uint) ([]Expense, error)
 }
 
 type service struct {
@@ -58,4 +59,8 @@ func (s *service) DeleteExpense(id uint) error {
 		return errors.New("invalid ID")
 	}
 	return s.repo.Delete(id)
+}
+
+func (s *service) GetExpensesByUser(userID uint) ([]Expense, error) {
+	return s.repo.GetByUserID(userID)
 }

@@ -1,10 +1,10 @@
 package expense
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"trackonomy/internal/dto"
-	"github.com/gin-gonic/gin"
 )
 
 type ExpenseController struct {
@@ -16,6 +16,14 @@ func NewExpenseController(service Service) *ExpenseController {
 }
 
 func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
+	// Get userID from JWT middleware
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDVal.(uint)
+
 	var request dto.ExpenseRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -27,7 +35,9 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 		Description: request.Description,
 		Amount:      request.Amount,
 		Date:        request.Date,
+		UserID:      userID,
 	}
+
 	if err := ctrl.service.CreateExpense(expense); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create expense"})
 		return
@@ -36,7 +46,14 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 }
 
 func (ctrl *ExpenseController) GetAllExpenses(c *gin.Context) {
-	expenses, err := ctrl.service.GetAllExpenses()
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDVal.(uint)
+
+	expenses, err := ctrl.service.GetExpensesByUser(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve expenses"})
 		return

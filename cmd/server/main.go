@@ -7,6 +7,7 @@ import (
 	"trackonomy/db"
 	"trackonomy/internal"
 	"trackonomy/internal/expense"
+	"trackonomy/internal/user"
 
 	"github.com/gin-gonic/gin"
 )
@@ -52,7 +53,10 @@ func main() {
 
 // runMigrations handles all database migrations
 func runMigrations() {
-	err := db.DB.AutoMigrate(&expense.Expense{})
+	err := db.DB.AutoMigrate(
+		&user.User{},
+		&expense.Expense{},
+	)
 	if err != nil {
 		log.Fatalf("Database migration failed: %v", err)
 	}
