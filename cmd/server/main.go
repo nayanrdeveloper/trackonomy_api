@@ -7,9 +7,11 @@ import (
 	"trackonomy/db"
 	"trackonomy/internal"
 	"trackonomy/internal/expense"
+	"trackonomy/internal/logger"
 	"trackonomy/internal/user"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -18,6 +20,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
+
+	isProd := os.Getenv("GIN_MODE") == gin.ReleaseMode
+	if err := logger.InitLogger(isProd); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.Sync()
 
 	// Connect to the database
 	db.ConnectDatabase(*cfg)
@@ -45,9 +53,13 @@ func main() {
 	}
 
 	// Start the server
-	log.Printf("Starting server on :%s", port)
+	logger.Info("Starting server...",
+		zap.String("port", port),
+		zap.Bool("production", isProd),
+	)
+
 	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Fatal("Failed to start server", zap.Error(err))
 	}
 }
 
@@ -58,7 +70,7 @@ func runMigrations() {
 		&expense.Expense{},
 	)
 	if err != nil {
-		log.Fatalf("Database migration failed: %v", err)
+		logger.Fatal("Database migration failed", zap.Error(err))
 	}
-	log.Println("Database migration completed successfully.")
+	logger.Info("Database migration completed successfully.")
 }
