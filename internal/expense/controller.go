@@ -1,10 +1,13 @@
 package expense
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"trackonomy/internal/dto"
+	"trackonomy/internal/logger"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type ExpenseController struct {
@@ -62,22 +65,27 @@ func (ctrl *ExpenseController) GetAllExpenses(c *gin.Context) {
 }
 
 func (ctrl *ExpenseController) GetExpenseByID(c *gin.Context) {
+	idStr := c.Param("id")
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
+		logger.Warn("Invalid expense ID parameter", zap.String("id_param", idStr))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid expense ID"})
 		return
 	}
 
 	expense, err := ctrl.service.GetExpenseByID(uint(id))
 	if err != nil {
+		logger.Error("Failed to retrieve expense", zap.Error(err), zap.Int("expenseID", id))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve expense"})
 		return
 	}
 
 	if expense == nil {
+		logger.Info("Expense not found", zap.Int("expenseID", id))
 		c.JSON(http.StatusNotFound, gin.H{"message": "Expense not found"})
 		return
 	}
+	logger.Debug("Expense retrieved successfully", zap.Int("expenseID", int(expense.ID)))
 	c.JSON(http.StatusOK, gin.H{"data": expense})
 }
 
