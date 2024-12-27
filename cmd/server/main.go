@@ -8,6 +8,7 @@ import (
 	"trackonomy/internal"
 	"trackonomy/internal/expense"
 	"trackonomy/internal/logger"
+	"trackonomy/internal/response"
 	"trackonomy/internal/user"
 
 	"github.com/gin-gonic/gin"
@@ -45,6 +46,12 @@ func main() {
 
 	// Register routes
 	internal.RegisterRoutes(router, db.DB)
+
+	router.NoRoute(func(c *gin.Context) {
+		// You can use your response package (if you have a dedicated NotFound helper)
+		// or directly call response.Error with a 404:
+		response.Error(c, 404, "The resource you requested could not be found.", nil)
+	})
 
 	// Get the port from environment variables or default to 8080
 	port := os.Getenv("PORT")
