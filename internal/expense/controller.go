@@ -5,6 +5,9 @@ import (
 	"strconv"
 	"trackonomy/internal/dto"
 	"trackonomy/internal/logger"
+	"trackonomy/internal/response"
+	"trackonomy/internal/utils"
+	"trackonomy/internal/validators"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -22,14 +25,19 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 	// Get userID from JWT middleware
 	userIDVal, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		response.Error(c, http.StatusUnauthorized, "Unauthorized access", nil)
 		return
 	}
 	userID := userIDVal.(uint)
 
 	var request dto.ExpenseRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		response.BadRequest(c, "Invalid request payload", err.Error())
+		return
+	}
+
+	if err := validators.Validate.Struct(request); err != nil {
+		response.BadRequest(c, "Validation error", utils.ParseValidationErrors(err))
 		return
 	}
 
@@ -42,26 +50,28 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 	}
 
 	if err := ctrl.service.CreateExpense(expense); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create expense"})
+		logger.Error("Failed to create expense", zap.Error(err))
+		response.InternalServerError(c, "Could not create expense", err.Error())
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"data": expense})
+	response.Created(c, "Expense created successfully", expense)
 }
 
 func (ctrl *ExpenseController) GetAllExpenses(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		response.Error(c, http.StatusUnauthorized, "Unauthorized access", nil)
 		return
 	}
 	userID := userIDVal.(uint)
 
 	expenses, err := ctrl.service.GetExpensesByUser(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve expenses"})
+		logger.Error("Failed to retrieve expenses", zap.Error(err), zap.Uint("userID", userID))
+		response.InternalServerError(c, "Could not retrieve expenses", err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": expenses})
+	response.Success(c, http.StatusOK, "Expenses retrieved successfully", expenses)
 }
 
 func (ctrl *ExpenseController) GetExpenseByID(c *gin.Context) {
@@ -69,36 +79,41 @@ func (ctrl *ExpenseController) GetExpenseByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		logger.Warn("Invalid expense ID parameter", zap.String("id_param", idStr))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid expense ID"})
+		response.BadRequest(c, "Invalid expense ID", err.Error())
 		return
 	}
 
 	expense, err := ctrl.service.GetExpenseByID(uint(id))
 	if err != nil {
 		logger.Error("Failed to retrieve expense", zap.Error(err), zap.Int("expenseID", id))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve expense"})
+		response.InternalServerError(c, "Could not retrieve expense", err.Error())
 		return
 	}
 
 	if expense == nil {
 		logger.Info("Expense not found", zap.Int("expenseID", id))
-		c.JSON(http.StatusNotFound, gin.H{"message": "Expense not found"})
+		response.Error(c, http.StatusNotFound, "Expense not found", nil)
 		return
 	}
 	logger.Debug("Expense retrieved successfully", zap.Int("expenseID", int(expense.ID)))
-	c.JSON(http.StatusOK, gin.H{"data": expense})
+	response.Success(c, http.StatusOK, "Expense retrieved successfully", expense)
 }
 
 func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid expense ID"})
+		response.BadRequest(c, "Invalid expense ID", err.Error())
 		return
 	}
 
 	var request dto.ExpenseRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		response.BadRequest(c, "Invalid request payload", err.Error())
+		return
+	}
+
+	if err := validators.Validate.Struct(request); err != nil {
+		response.BadRequest(c, "Validation error", utils.ParseValidationErrors(err))
 		return
 	}
 
@@ -110,22 +125,24 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 		Date:        request.Date,
 	}
 	if err := ctrl.service.UpdateExpense(expense); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update expense"})
+		logger.Error("Failed to update expense", zap.Error(err), zap.Int("expenseID", id))
+		response.InternalServerError(c, "Could not update expense", err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": expense})
+	response.Updated(c, "Expense updated successfully", expense)
 }
 
 func (ctrl *ExpenseController) DeleteExpense(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid expense ID"})
+		response.BadRequest(c, "Invalid expense ID", err.Error())
 		return
 	}
 
 	if err := ctrl.service.DeleteExpense(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete expense"})
+		logger.Error("Failed to delete expense", zap.Error(err), zap.Int("expenseID", id))
+		response.InternalServerError(c, "Could not delete expense", err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Expense deleted successfully"})
+	response.Deleted(c, "Expense deleted successfully")
 }
