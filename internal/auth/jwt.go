@@ -28,13 +28,13 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing Authorization header"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization header format"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format is invalid"})
 			return
 		}
 
@@ -67,10 +67,10 @@ func validateToken(tokenStr string) (uint, error) {
 		// Extract user_id from the claims
 		userIDFloat, ok := claims["user_id"].(float64)
 		if !ok {
-			return 0, errors.New("invalid token claims")
+			return 0, errors.New("token claims are invalid")
 		}
 		return uint(userIDFloat), nil
 	}
 
-	return 0, errors.New("invalid token")
+	return 0, errors.New("token is invalid")
 }

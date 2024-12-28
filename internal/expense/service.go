@@ -2,6 +2,7 @@ package expense
 
 import (
 	"errors"
+	"trackonomy/internal/utils"
 )
 
 type Service interface {
@@ -11,6 +12,7 @@ type Service interface {
 	UpdateExpense(expense *Expense) error
 	DeleteExpense(id uint) error
 	GetExpensesByUser(userID uint) ([]Expense, error)
+	GetExpensesByUserPaginated(userID uint, pagination utils.Pagination) ([]Expense, int64, error)
 }
 
 type service struct {
@@ -63,4 +65,9 @@ func (s *service) DeleteExpense(id uint) error {
 
 func (s *service) GetExpensesByUser(userID uint) ([]Expense, error) {
 	return s.repo.GetByUserID(userID)
+}
+
+func (s *service) GetExpensesByUserPaginated(userID uint, pagination utils.Pagination) ([]Expense, int64, error) {
+	// We call a new repository method that supports pagination
+	return s.repo.GetAllByUserPaginated(userID, pagination)
 }
