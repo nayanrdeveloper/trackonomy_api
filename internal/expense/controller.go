@@ -22,13 +22,7 @@ func NewExpenseController(service Service) *ExpenseController {
 }
 
 func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
-	// Get userID from JWT middleware
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized access", nil)
-		return
-	}
-	userID := userIDVal.(uint)
+	userID := c.MustGet("userID").(uint)
 
 	var request dto.ExpenseRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -47,6 +41,7 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 		Amount:      request.Amount,
 		Date:        request.Date,
 		UserID:      userID,
+		CategoryID:  request.CategoryID,
 	}
 
 	if err := ctrl.service.CreateExpense(expense); err != nil {
@@ -58,12 +53,7 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 }
 
 func (ctrl *ExpenseController) GetAllExpenses(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized access", nil)
-		return
-	}
-	userID := userIDVal.(uint)
+	userID := c.MustGet("userID").(uint)
 
 	pagination := utils.NewPaginationFromRequest(c)
 	expenses, totalRecords, err := ctrl.service.GetExpensesByUserPaginated(userID, pagination)
@@ -132,6 +122,8 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 		Description: request.Description,
 		Amount:      request.Amount,
 		Date:        request.Date,
+
+		CategoryID: request.CategoryID,
 	}
 	if err := ctrl.service.UpdateExpense(expense); err != nil {
 		logger.Error("Failed to update expense", zap.Error(err), zap.Int("expenseID", id))

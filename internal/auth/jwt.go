@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"trackonomy/internal/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
@@ -28,20 +29,23 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
+			response.Error(c, http.StatusUnauthorized, "Authorization header is missing", nil)
+			c.Abort()
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format is invalid"})
+			response.Error(c, http.StatusUnauthorized, "Authorization header format is invalid", nil)
+			c.Abort()
 			return
 		}
 
 		tokenStr := parts[1]
 		userID, err := validateToken(tokenStr)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			response.Error(c, http.StatusUnauthorized, err.Error(), nil)
+			c.Abort()
 			return
 		}
 
