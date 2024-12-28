@@ -7,4 +7,6 @@ type ExpenseRequest struct {
 	Description string    `json:"description" validate:"max=255"`
 	Amount      float64   `json:"amount" binding:"required" validate:"required,gt=0"`
 	Date        time.Time `json:"date" binding:"required" validate:"required"`
+
+	CategoryID uint `json:"category_id" validate:"required,gt=0"`
 }
