@@ -2,6 +2,7 @@ package expense
 
 import (
 	"errors"
+	"trackonomy/internal/utils"
 
 	"gorm.io/gorm"
 )
@@ -14,6 +15,7 @@ type Repository interface {
 	Update(expense *Expense) error
 	Delete(id uint) error
 	GetByUserID(userID uint) ([]Expense, error)
+	GetAllByUserPaginated(userID uint, p utils.Pagination) ([]Expense, int64, error)
 }
 
 type repository struct {
@@ -79,4 +81,41 @@ func (r *repository) GetByUserID(userID uint) ([]Expense, error) {
 		return nil, err
 	}
 	return expenses, nil
+}
+
+func (r *repository) GetAllByUserPaginated(userID uint, p utils.Pagination) ([]Expense, int64, error) {
+	var (
+		expenses     []Expense
+		totalRecords int64
+	)
+
+	// Start building the query
+	query := r.db.Model(&Expense{}).
+		Where("user_id = ?", userID)
+
+	// Optional: text searching on Title or Description if you like
+	if p.Search != "" {
+		// Example: searching for matching substring in Title or Description
+		searchTerm := "%" + p.Search + "%"
+		query = query.Where("title ILIKE ? OR description ILIKE ?", searchTerm, searchTerm)
+	}
+
+	// Count total records (before pagination)
+	if err := query.Count(&totalRecords).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Apply sorting
+	// p.Sort might look like "title asc", "amount desc", "created_at desc", etc.
+	if p.Sort != "" {
+		query = query.Order(p.Sort)
+	}
+
+	// Apply pagination (page, limit)
+	offset := (p.Page - 1) * p.Limit
+	if err := query.Offset(offset).Limit(p.Limit).Find(&expenses).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return expenses, totalRecords, nil
 }

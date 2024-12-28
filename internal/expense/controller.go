@@ -65,13 +65,22 @@ func (ctrl *ExpenseController) GetAllExpenses(c *gin.Context) {
 	}
 	userID := userIDVal.(uint)
 
-	expenses, err := ctrl.service.GetExpensesByUser(userID)
+	pagination := utils.NewPaginationFromRequest(c)
+	expenses, totalRecords, err := ctrl.service.GetExpensesByUserPaginated(userID, pagination)
+
 	if err != nil {
 		logger.Error("Failed to retrieve expenses", zap.Error(err), zap.Uint("userID", userID))
 		response.InternalServerError(c, "Could not retrieve expenses", err.Error())
 		return
 	}
-	response.Success(c, http.StatusOK, "Expenses retrieved successfully", expenses)
+
+	responseData := gin.H{
+		"expenses":     expenses,
+		"total":        totalRecords,
+		"current_page": pagination.Page,
+		"limit":        pagination.Limit,
+	}
+	response.Success(c, http.StatusOK, "Expenses retrieved successfully", responseData)
 }
 
 func (ctrl *ExpenseController) GetExpenseByID(c *gin.Context) {
