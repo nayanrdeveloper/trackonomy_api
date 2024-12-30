@@ -27,43 +27,49 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	expenseService := expense.NewService(expenseRepo)
 	expenseController := expense.NewExpenseController(expenseService)
 
-	// ====== Public Endpoints ======
-	// For example: /auth/register, /auth/login
-	authRoutes := router.Group("/auth")
-	{
-		authRoutes.POST("/register", userController.RegisterUser)
-		authRoutes.POST("/login", userController.LoginUser)
-	}
-
-	// ====== Protected Endpoints (JWT middleware) ======
-	// We'll place them under /api for clarity.
+	// ====== API Routes ======
 	api := router.Group("/api")
-	api.Use(auth.AuthMiddleware())
 	{
-		// User-specific endpoints
-		userRoutes := api.Group("/user")
+		// ====== Public Endpoints ======
+		// These routes do not require authentication.
+		authRoutes := api.Group("/auth")
 		{
-			userRoutes.GET("/profile", userController.GetProfile)
+			authRoutes.POST("/register", userController.RegisterUser)
+			authRoutes.POST("/login", userController.LoginUser)
+			// If you've implemented refresh tokens, uncomment the following line:
+			// authRoutes.POST("/refresh", userController.RefreshToken)
 		}
 
-		// Categories
-		categoryRoutes := api.Group("/categories")
+		// ====== Protected Endpoints (JWT middleware) ======
+		// These routes require a valid JWT token.
+		protected := api.Group("/")
+		protected.Use(auth.AuthMiddleware())
 		{
-			categoryRoutes.POST("/", categoryController.CreateCategory)
-			categoryRoutes.GET("/", categoryController.GetAllCategories)
-			categoryRoutes.GET("/:id", categoryController.GetCategoryByID)
-			categoryRoutes.PUT("/:id", categoryController.UpdateCategory)
-			categoryRoutes.DELETE("/:id", categoryController.DeleteCategory)
-		}
+			// ----- User-specific Endpoints -----
+			userRoutes := protected.Group("/user")
+			{
+				userRoutes.GET("/profile", userController.GetProfile)
+			}
 
-		// Expenses
-		expenseRoutes := api.Group("/expenses")
-		{
-			expenseRoutes.POST("/", expenseController.CreateExpense)
-			expenseRoutes.GET("/", expenseController.GetAllExpenses)
-			expenseRoutes.GET("/:id", expenseController.GetExpenseByID)
-			expenseRoutes.PUT("/:id", expenseController.UpdateExpense)
-			expenseRoutes.DELETE("/:id", expenseController.DeleteExpense)
+			// ----- Category Endpoints -----
+			categoryRoutes := protected.Group("/categories")
+			{
+				categoryRoutes.POST("/", categoryController.CreateCategory)
+				categoryRoutes.GET("/", categoryController.GetAllCategories)
+				categoryRoutes.GET("/:id", categoryController.GetCategoryByID)
+				categoryRoutes.PUT("/:id", categoryController.UpdateCategory)
+				categoryRoutes.DELETE("/:id", categoryController.DeleteCategory)
+			}
+
+			// ----- Expense Endpoints -----
+			expenseRoutes := protected.Group("/expenses")
+			{
+				expenseRoutes.POST("/", expenseController.CreateExpense)
+				expenseRoutes.GET("/", expenseController.GetAllExpenses)
+				expenseRoutes.GET("/:id", expenseController.GetExpenseByID)
+				expenseRoutes.PUT("/:id", expenseController.UpdateExpense)
+				expenseRoutes.DELETE("/:id", expenseController.DeleteExpense)
+			}
 		}
 	}
 }
