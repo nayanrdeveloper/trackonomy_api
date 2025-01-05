@@ -29,7 +29,7 @@ func main() {
 	defer logger.Sync()
 
 	// Connect to the database
-	db.ConnectDatabase(*cfg)
+	db.ConnectDatabase(cfg)
 
 	// Run database migrations
 	runMigrations()
