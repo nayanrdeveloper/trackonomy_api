@@ -40,6 +40,15 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 			// authRoutes.POST("/refresh", userController.RefreshToken)
 		}
 
+		// ====== Public Category Endpoints ======
+		// These routes do not require authentication.
+		categoryRoutes := api.Group("/categories")
+		{
+			categoryRoutes.POST("/", categoryController.CreateCategory)
+			categoryRoutes.GET("/", categoryController.GetAllCategories)
+			categoryRoutes.GET("/:id", categoryController.GetCategoryByID)
+		}
+
 		// ====== Protected Endpoints (JWT middleware) ======
 		// These routes require a valid JWT token.
 		protected := api.Group("/")
@@ -51,14 +60,11 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 				userRoutes.GET("/profile", userController.GetProfile)
 			}
 
-			// ----- Category Endpoints -----
-			categoryRoutes := protected.Group("/categories")
+			// ----- Protected Category Endpoints -----
+			protectedCategoryRoutes := protected.Group("/categories")
 			{
-				categoryRoutes.POST("/", categoryController.CreateCategory)
-				categoryRoutes.GET("/", categoryController.GetAllCategories)
-				categoryRoutes.GET("/:id", categoryController.GetCategoryByID)
-				categoryRoutes.PUT("/:id", categoryController.UpdateCategory)
-				categoryRoutes.DELETE("/:id", categoryController.DeleteCategory)
+				protectedCategoryRoutes.PUT("/:id", categoryController.UpdateCategory)
+				protectedCategoryRoutes.DELETE("/:id", categoryController.DeleteCategory)
 			}
 
 			// ----- Expense Endpoints -----
