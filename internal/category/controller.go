@@ -21,6 +21,33 @@ func NewCategoryController(service Service) *CategoryController {
 	return &CategoryController{service: service}
 }
 
+// CreateGlobalCategory creates a category that is for all users (is_global = true).
+func (cc *CategoryController) CreateGlobalCategory(c *gin.Context) {
+	// No auth check => userID = 0
+	var req dto.CategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid category data", err.Error())
+		return
+	}
+	if err := validators.Validate.Struct(req); err != nil {
+		validationErrs := utils.ParseValidationErrors(err)
+		response.BadRequest(c, "Validation error", validationErrs)
+		return
+	}
+
+	cat := &Category{
+		Name:     req.Name,
+		IsGlobal: true, // Mark it global
+		UserID:   0,    // userID=0 or no user
+	}
+
+	if err := cc.service.CreateCategory(cat); err != nil {
+		response.InternalServerError(c, "Could not create global category", err.Error())
+		return
+	}
+	response.Created(c, "Global category created successfully", cat)
+}
+
 // CreateCategory creates a new category.
 func (cc *CategoryController) CreateCategory(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
@@ -50,6 +77,17 @@ func (cc *CategoryController) CreateCategory(c *gin.Context) {
 		return
 	}
 	response.Created(c, "Category created successfully", cat)
+}
+
+// GetAllGlobalCategories fetches only global categories (no user).
+func (cc *CategoryController) GetAllGlobalCategories(c *gin.Context) {
+	// userID=0 => repository returns is_global = true categories
+	cats, err := cc.service.GetAllCategories(0)
+	if err != nil {
+		response.InternalServerError(c, "Could not retrieve global categories", err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "Global categories retrieved successfully", cats)
 }
 
 // GetAllCategories lists all categories for the user.

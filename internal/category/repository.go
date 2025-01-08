@@ -33,7 +33,22 @@ func (r *repository) Create(category *Category) error {
 // GetAll returns all categories for the given userID (if categories are user-specific).
 func (r *repository) GetAll(userID uint) ([]Category, error) {
 	var categories []Category
-	err := r.db.Where("user_id = ?", userID).Find(&categories).Error
+
+	// If userID is 0, we only want the global categories.
+	// If userID is > 0, we want both global + user-specific.
+	if userID == 0 {
+		// Unauthenticated or explicitly says "0"
+		// Return only global categories
+		err := r.db.Where("is_global = ?", true).Find(&categories).Error
+		if err != nil {
+			return nil, err
+		}
+		return categories, nil
+	}
+
+	// Otherwise, userID > 0 => Return global + user
+	err := r.db.Where("is_global = ? OR user_id = ?", true, userID).
+		Find(&categories).Error
 	if err != nil {
 		return nil, err
 	}
