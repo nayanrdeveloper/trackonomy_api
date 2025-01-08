@@ -36,17 +36,14 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 		{
 			authRoutes.POST("/register", userController.RegisterUser)
 			authRoutes.POST("/login", userController.LoginUser)
-			// If you've implemented refresh tokens, uncomment the following line:
-			// authRoutes.POST("/refresh", userController.RefreshToken)
 		}
 
 		// ====== Public Category Endpoints ======
 		// These routes do not require authentication.
 		categoryRoutes := api.Group("/categories")
 		{
-			categoryRoutes.POST("/", categoryController.CreateCategory)
-			categoryRoutes.GET("/", categoryController.GetAllCategories)
-			categoryRoutes.GET("/:id", categoryController.GetCategoryByID)
+			categoryRoutes.POST("/global", categoryController.CreateGlobalCategory)
+			categoryRoutes.GET("/global", categoryController.GetAllGlobalCategories)
 		}
 
 		// ====== Protected Endpoints (JWT middleware) ======
@@ -63,6 +60,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 			// ----- Protected Category Endpoints -----
 			protectedCategoryRoutes := protected.Group("/categories")
 			{
+				protectedCategoryRoutes.POST("/", categoryController.CreateCategory)
+				protectedCategoryRoutes.GET("/", categoryController.GetAllCategories)
+				protectedCategoryRoutes.GET("/:id", categoryController.GetCategoryByID)
 				protectedCategoryRoutes.PUT("/:id", categoryController.UpdateCategory)
 				protectedCategoryRoutes.DELETE("/:id", categoryController.DeleteCategory)
 			}
