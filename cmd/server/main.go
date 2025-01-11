@@ -45,7 +45,7 @@ func main() {
 	router := gin.Default()
 
 	// Register routes
-	internal.RegisterRoutes(router, db.DB)
+	internal.RegisterRoutes(router, db.DB, cfg)
 
 	router.NoRoute(func(c *gin.Context) {
 		// You can use your response package (if you have a dedicated NotFound helper)
