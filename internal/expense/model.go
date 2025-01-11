@@ -13,11 +13,13 @@ type Expense struct {
 	Amount      float64   `json:"amount"`
 	Date        time.Time `json:"date"`
 
-	UserID uint      `json:"user_id"` // <-- Foreign key to User
+	UserID uint      `json:"user_id"`
 	User   user.User `json:"-" gorm:"foreignKey:UserID"`
 
 	CategoryID uint               `json:"category_id"`
 	Category   *category.Category `json:"-" gorm:"foreignKey:CategoryID"`
+
+	FileURL string `json:"file_url"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

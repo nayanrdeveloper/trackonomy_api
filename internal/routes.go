@@ -1,9 +1,11 @@
 package internal
 
 import (
+	"trackonomy/config"
 	"trackonomy/internal/auth"
 	"trackonomy/internal/category"
 	"trackonomy/internal/expense"
+	"trackonomy/internal/upload"
 	"trackonomy/internal/user"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +13,13 @@ import (
 )
 
 // RegisterRoutes sets up the API routes for the application.
-func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
+func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
+
+	uploadService, err := upload.NewCloudinaryService(cfg)
+    if err != nil {
+        panic("Failed to create Cloudinary service: " + err.Error())
+    }
+
 	// ====== User Setup ======
 	userRepo := user.NewRepository(db)
 	userService := user.NewService(userRepo)
@@ -25,7 +33,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	// ====== Expense Setup ======
 	expenseRepo := expense.NewRepository(db)
 	expenseService := expense.NewService(expenseRepo)
-	expenseController := expense.NewExpenseController(expenseService)
+	expenseController := expense.NewExpenseController(expenseService, uploadService)
 
 	// ====== API Routes ======
 	api := router.Group("/api")
