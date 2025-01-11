@@ -6,6 +6,8 @@ import (
 	"trackonomy/config"
 	"trackonomy/db"
 	"trackonomy/internal"
+	"trackonomy/internal/account"
+	"trackonomy/internal/category"
 	"trackonomy/internal/expense"
 	"trackonomy/internal/logger"
 	"trackonomy/internal/response"
@@ -75,6 +77,8 @@ func runMigrations() {
 	err := db.DB.AutoMigrate(
 		&user.User{},
 		&expense.Expense{},
+		&category.Category{},
+		&account.Account{},
 	)
 	if err != nil {
 		logger.Fatal("Database migration failed", zap.Error(err))

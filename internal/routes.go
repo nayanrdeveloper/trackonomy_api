@@ -2,6 +2,7 @@ package internal
 
 import (
 	"trackonomy/config"
+	"trackonomy/internal/account"
 	"trackonomy/internal/auth"
 	"trackonomy/internal/category"
 	"trackonomy/internal/expense"
@@ -16,9 +17,9 @@ import (
 func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 	uploadService, err := upload.NewCloudinaryService(cfg)
-    if err != nil {
-        panic("Failed to create Cloudinary service: " + err.Error())
-    }
+	if err != nil {
+		panic("Failed to create Cloudinary service: " + err.Error())
+	}
 
 	// ====== User Setup ======
 	userRepo := user.NewRepository(db)
@@ -34,6 +35,11 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	expenseRepo := expense.NewRepository(db)
 	expenseService := expense.NewService(expenseRepo)
 	expenseController := expense.NewExpenseController(expenseService, uploadService)
+
+	// ====== Account Setup ====== (NEW)
+	accountRepo := account.NewRepository(db)
+	accountService := account.NewService(accountRepo)
+	accountController := account.NewAccountController(accountService)
 
 	// ====== API Routes ======
 	api := router.Group("/api")
@@ -52,6 +58,13 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		{
 			categoryRoutes.POST("/global", categoryController.CreateGlobalCategory)
 			categoryRoutes.GET("/global", categoryController.GetAllGlobalCategories)
+		}
+
+		// ====== Public Account Endpoints (NEW) ======
+		accountRoutes := api.Group("/accounts")
+		{
+			accountRoutes.POST("/global", accountController.CreateGlobalAccount)
+			accountRoutes.GET("/global", accountController.GetAllGlobalAccounts)
 		}
 
 		// ====== Protected Endpoints (JWT middleware) ======
@@ -83,6 +96,16 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 				expenseRoutes.GET("/:id", expenseController.GetExpenseByID)
 				expenseRoutes.PUT("/:id", expenseController.UpdateExpense)
 				expenseRoutes.DELETE("/:id", expenseController.DeleteExpense)
+			}
+
+			// ----- Protected Account Endpoints (NEW) -----
+			protectedAccountRoutes := protected.Group("/accounts")
+			{
+				protectedAccountRoutes.POST("/", accountController.CreateAccount)
+				protectedAccountRoutes.GET("/", accountController.GetAllAccounts)
+				protectedAccountRoutes.GET("/:id", accountController.GetAccountByID)
+				protectedAccountRoutes.PUT("/:id", accountController.UpdateAccount)
+				protectedAccountRoutes.DELETE("/:id", accountController.DeleteAccount)
 			}
 		}
 	}

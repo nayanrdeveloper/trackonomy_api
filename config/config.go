@@ -20,9 +20,9 @@ type Config struct {
 	DBSSLMode   string
 
 	// Cloudinary config
-    CloudinaryCloudName  string
-    CloudinaryAPIKey     string
-    CloudinaryAPISecret  string
+	CloudinaryCloudName string
+	CloudinaryAPIKey    string
+	CloudinaryAPISecret string
 }
 
 // LoadConfig loads configuration from environment variables
@@ -46,8 +46,8 @@ func LoadConfig() (*Config, error) {
 		DBSSLMode:   os.Getenv("DB_SSLMODE"),
 
 		CloudinaryCloudName: os.Getenv("CLOUDINARY_CLOUD_NAME"),
-        CloudinaryAPIKey:    os.Getenv("CLOUDINARY_API_KEY"),
-        CloudinaryAPISecret: os.Getenv("CLOUDINARY_API_SECRET"),
+		CloudinaryAPIKey:    os.Getenv("CLOUDINARY_API_KEY"),
+		CloudinaryAPISecret: os.Getenv("CLOUDINARY_API_SECRET"),
 	}
 
 	// Validate required configurations based on the environment

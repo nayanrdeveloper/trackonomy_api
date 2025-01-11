@@ -15,7 +15,7 @@ import (
 )
 
 type ExpenseController struct {
-	service Service
+	service           Service
 	cloudinaryService upload.CloudinaryService
 }
 
@@ -38,26 +38,26 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 	}
 
 	// 1) Attempt to retrieve the file
-    file, fileHeader, err := c.Request.FormFile("file") // key="file"
-    var fileURL string
-    if err == nil && file != nil {
-        
-        // Example: Validate the file type (only image or PDF)
-        allowedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".pdf"}
-        const maxSize = 5 * 1024 * 1024
+	file, fileHeader, err := c.Request.FormFile("file") // key="file"
+	var fileURL string
+	if err == nil && file != nil {
+
+		// Example: Validate the file type (only image or PDF)
+		allowedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".pdf"}
+		const maxSize = 5 * 1024 * 1024
 		if err := upload.ValidateFile(fileHeader, allowedExtensions, maxSize); err != nil {
 			response.BadRequest(c, "File validation failed", err.Error())
 			return
 		}
 
-        // 2) Upload to Cloudinary
-        fileURL, err = ctrl.cloudinaryService.UploadFile(c.Request.Context(), file, fileHeader, "trackonomy/expenses")
-        if err != nil {
-            logger.Error("Failed to upload file to Cloudinary", zap.Error(err))
-            response.InternalServerError(c, "File upload failed", err.Error())
-            return
-        }
-    }
+		// 2) Upload to Cloudinary
+		fileURL, err = ctrl.cloudinaryService.UploadFile(c.Request.Context(), file, fileHeader, "trackonomy/expenses")
+		if err != nil {
+			logger.Error("Failed to upload file to Cloudinary", zap.Error(err))
+			response.InternalServerError(c, "File upload failed", err.Error())
+			return
+		}
+	}
 
 	expense := &Expense{
 		Title:       request.Title,
@@ -140,45 +140,45 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 		return
 	}
 
-	 // Retrieve existing expense from DB
-	 existingExpense, err := ctrl.service.GetExpenseByID(uint(id))
-	 if err != nil {
-		 logger.Error("Failed to retrieve expense for update", zap.Error(err))
-		 response.InternalServerError(c, "Could not retrieve expense", err.Error())
-		 return
-	 }
-	 if existingExpense == nil {
-		 response.NotFound(c, "Expense not found", nil)
-		 return
-	 }
- 
-	 // Attempt to retrieve an uploaded file
-	 file, fileHeader, fileErr := c.Request.FormFile("file")
-	 var fileURL string
-	 if fileErr == nil && file != nil {
-		 // Validate file
-		 allowedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".pdf"}
-		 const maxSize = 5 * 1024 * 1024 // 5 MB
-		 if err := upload.ValidateFile(fileHeader, allowedExtensions, maxSize); err != nil {
+	// Retrieve existing expense from DB
+	existingExpense, err := ctrl.service.GetExpenseByID(uint(id))
+	if err != nil {
+		logger.Error("Failed to retrieve expense for update", zap.Error(err))
+		response.InternalServerError(c, "Could not retrieve expense", err.Error())
+		return
+	}
+	if existingExpense == nil {
+		response.NotFound(c, "Expense not found", nil)
+		return
+	}
+
+	// Attempt to retrieve an uploaded file
+	file, fileHeader, fileErr := c.Request.FormFile("file")
+	var fileURL string
+	if fileErr == nil && file != nil {
+		// Validate file
+		allowedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".pdf"}
+		const maxSize = 5 * 1024 * 1024 // 5 MB
+		if err := upload.ValidateFile(fileHeader, allowedExtensions, maxSize); err != nil {
 			response.BadRequest(c, "File validation failed", err.Error())
 			return
 		}
- 
-		 // Upload to Cloudinary
-		 fileURL, err = ctrl.cloudinaryService.UploadFile(c.Request.Context(), file, fileHeader, "trackonomy/expenses")
-		 if err != nil {
-			 logger.Error("Failed to upload file to Cloudinary", zap.Error(err))
-			 response.InternalServerError(c, "File upload failed", err.Error())
-			 return
-		 }
-		 existingExpense.FileURL = fileURL
-	 }
- 
-	 	// Update other fields
-		existingExpense.Title = request.Title
-		existingExpense.Description = request.Description
-		existingExpense.Amount = request.Amount
-		existingExpense.CategoryID = request.CategoryID
+
+		// Upload to Cloudinary
+		fileURL, err = ctrl.cloudinaryService.UploadFile(c.Request.Context(), file, fileHeader, "trackonomy/expenses")
+		if err != nil {
+			logger.Error("Failed to upload file to Cloudinary", zap.Error(err))
+			response.InternalServerError(c, "File upload failed", err.Error())
+			return
+		}
+		existingExpense.FileURL = fileURL
+	}
+
+	// Update other fields
+	existingExpense.Title = request.Title
+	existingExpense.Description = request.Description
+	existingExpense.Amount = request.Amount
+	existingExpense.CategoryID = request.CategoryID
 
 	if err := ctrl.service.UpdateExpense(existingExpense); err != nil {
 		logger.Error("Failed to update expense", zap.Error(err), zap.Int("expenseID", id))
