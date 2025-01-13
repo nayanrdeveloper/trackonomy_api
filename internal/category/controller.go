@@ -37,6 +37,7 @@ func (cc *CategoryController) CreateGlobalCategory(c *gin.Context) {
 
 	cat := &Category{
 		Name:     req.Name,
+		Icon:     req.Icon,
 		IsGlobal: true, // Mark it global
 		UserID:   0,    // userID=0 or no user
 	}
@@ -68,6 +69,7 @@ func (cc *CategoryController) CreateCategory(c *gin.Context) {
 
 	cat := &Category{
 		Name:   req.Name,
+		Icon:   req.Icon,
 		UserID: userID, // If categories belong to a user
 	}
 
@@ -156,6 +158,7 @@ func (cc *CategoryController) UpdateCategory(c *gin.Context) {
 	cat := &Category{
 		ID:     uint(id),
 		Name:   req.Name,
+		Icon:   req.Icon,
 		UserID: userID, // keep user ownership
 	}
 
