@@ -38,7 +38,10 @@ func (r *repository) Create(expense *Expense) error {
 // GetAll retrieves all expenses from the database.
 func (r *repository) GetAll() ([]Expense, error) {
 	var expenses []Expense
-	err := r.db.Find(&expenses).Error
+	err := r.db.
+        Preload("Category").
+        Preload("Account").
+        Find(&expenses).Error
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +51,10 @@ func (r *repository) GetAll() ([]Expense, error) {
 // GetByID retrieves an expense by its ID from the database.
 func (r *repository) GetByID(id uint) (*Expense, error) {
 	var expense Expense
-	err := r.db.First(&expense, id).Error
+	err := r.db.
+        Preload("Category").
+        Preload("Account").
+        First(&expense, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -76,7 +82,11 @@ func (r *repository) Delete(id uint) error {
 
 func (r *repository) GetByUserID(userID uint) ([]Expense, error) {
 	var expenses []Expense
-	err := r.db.Where("user_id = ?", userID).Find(&expenses).Error
+	err := r.db.
+        Where("user_id = ?", userID).
+        Preload("Category").
+        Preload("Account").
+        Find(&expenses).Error
 	if err != nil {
 		return nil, err
 	}
@@ -115,6 +125,7 @@ func (r *repository) GetAllByUserPaginated(userID uint, p utils.Pagination) ([]E
 	offset := (p.Page - 1) * p.Limit
 	if err := query.
 		Preload("Category").
+		Preload("Account").
 		Offset(offset).
 		Limit(p.Limit).
 		Find(&expenses).Error; err != nil {

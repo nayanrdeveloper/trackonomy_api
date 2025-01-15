@@ -6,4 +6,5 @@ type ExpenseRequest struct {
 	Amount      float64 `json:"amount" binding:"required" validate:"required,gt=0"`
 
 	CategoryID uint `json:"category_id" validate:"required,gt=0"`
+	AccountID  uint `json:"account_id" validate:"required,gt=0"`
 }
