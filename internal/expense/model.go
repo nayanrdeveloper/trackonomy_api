@@ -2,6 +2,7 @@ package expense
 
 import (
 	"time"
+	"trackonomy/internal/account"
 	"trackonomy/internal/category"
 	"trackonomy/internal/user"
 )
@@ -18,6 +19,9 @@ type Expense struct {
 
 	CategoryID uint               `json:"category_id"`
 	Category   *category.Category `json:"category" gorm:"foreignKey:CategoryID"`
+
+	AccountID uint              `json:"account_id"`
+    Account   *account.Account  `json:"account" gorm:"foreignKey:AccountID"`
 
 	FileURL string `json:"file_url"`
 
