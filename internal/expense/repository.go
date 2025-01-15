@@ -113,7 +113,11 @@ func (r *repository) GetAllByUserPaginated(userID uint, p utils.Pagination) ([]E
 
 	// Apply pagination (page, limit)
 	offset := (p.Page - 1) * p.Limit
-	if err := query.Offset(offset).Limit(p.Limit).Find(&expenses).Error; err != nil {
+	if err := query.
+		Preload("Category").
+		Offset(offset).
+		Limit(p.Limit).
+		Find(&expenses).Error; err != nil {
 		return nil, 0, err
 	}
 
