@@ -17,7 +17,7 @@ type Expense struct {
 	User   user.User `json:"-" gorm:"foreignKey:UserID"`
 
 	CategoryID uint               `json:"category_id"`
-	Category   *category.Category `json:"-" gorm:"foreignKey:CategoryID"`
+	Category   *category.Category `json:"category" gorm:"foreignKey:CategoryID"`
 
 	FileURL string `json:"file_url"`
 
