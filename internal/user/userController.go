@@ -1,13 +1,14 @@
 package user
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"trackonomy/internal/auth"
 	"trackonomy/internal/dto"
+	"trackonomy/internal/response"
+
+	"github.com/gin-gonic/gin"
 )
 
-// UserController handles user-related requests.
 type UserController struct {
 	service Service
 }
@@ -20,7 +21,7 @@ func NewUserController(s Service) *UserController {
 func (uc *UserController) RegisterUser(c *gin.Context) {
 	var req dto.UserRegistrationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid registration data"})
+		response.BadRequest(c, "Invalid registration data", err.Error())
 		return
 	}
 
@@ -31,16 +32,14 @@ func (uc *UserController) RegisterUser(c *gin.Context) {
 	}
 
 	if err := uc.service.RegisterUser(user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// e.g. "email already in use" or any other validation error from service
+		response.BadRequest(c, "Could not register user", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "User registered successfully",
-		"user": gin.H{
-			"username": user.Username,
-			"email":    user.Email,
-		},
+	response.Created(c, "User registered successfully", gin.H{
+		"username": user.Username,
+		"email":    user.Email,
 	})
 }
 
@@ -48,55 +47,52 @@ func (uc *UserController) RegisterUser(c *gin.Context) {
 func (uc *UserController) LoginUser(c *gin.Context) {
 	var req dto.UserLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid login data"})
+		response.BadRequest(c, "Invalid login data", err.Error())
 		return
 	}
 
 	// Validate credentials
 	user, err := uc.service.ValidateCredentials(req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		// Typically a 401 if credentials are invalid
+		response.Error(c, http.StatusUnauthorized, err.Error(), nil)
 		return
 	}
 
 	// Generate token
 	token, err := auth.GenerateToken(user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		response.InternalServerError(c, "Failed to generate token", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Login successful",
-		"token":   token,
+	response.Success(c, http.StatusOK, "Login successful", gin.H{
+		"token": token,
 	})
 }
 
 // GetProfile retrieves the user profile based on the token.
 func (uc *UserController) GetProfile(c *gin.Context) {
-	// userID is set by the AuthMiddleware
 	userIDVal, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		response.Error(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 	userID := userIDVal.(uint)
 
-	user, err := uc.service.GetByID(userID) // We'll add GetByID in our service to retrieve the user details
+	user, err := uc.service.GetByID(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user profile"})
+		response.InternalServerError(c, "Failed to get user profile", err.Error())
 		return
 	}
 	if user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		response.Error(c, http.StatusNotFound, "User not found", nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"user": gin.H{
-			"id":       user.ID,
-			"username": user.Username,
-			"email":    user.Email,
-		},
+	response.Success(c, http.StatusOK, "User profile retrieved", gin.H{
+		"id":       user.ID,
+		"username": user.Username,
+		"email":    user.Email,
 	})
 }
