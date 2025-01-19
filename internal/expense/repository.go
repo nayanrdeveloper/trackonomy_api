@@ -39,9 +39,9 @@ func (r *repository) Create(expense *Expense) error {
 func (r *repository) GetAll() ([]Expense, error) {
 	var expenses []Expense
 	err := r.db.
-        Preload("Category").
-        Preload("Account").
-        Find(&expenses).Error
+		Preload("Category").
+		Preload("Account").
+		Find(&expenses).Error
 	if err != nil {
 		return nil, err
 	}
@@ -52,9 +52,9 @@ func (r *repository) GetAll() ([]Expense, error) {
 func (r *repository) GetByID(id uint) (*Expense, error) {
 	var expense Expense
 	err := r.db.
-        Preload("Category").
-        Preload("Account").
-        First(&expense, id).Error
+		Preload("Category").
+		Preload("Account").
+		First(&expense, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -83,10 +83,10 @@ func (r *repository) Delete(id uint) error {
 func (r *repository) GetByUserID(userID uint) ([]Expense, error) {
 	var expenses []Expense
 	err := r.db.
-        Where("user_id = ?", userID).
-        Preload("Category").
-        Preload("Account").
-        Find(&expenses).Error
+		Where("user_id = ?", userID).
+		Preload("Category").
+		Preload("Account").
+		Find(&expenses).Error
 	if err != nil {
 		return nil, err
 	}

@@ -180,7 +180,7 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 	existingExpense.Description = request.Description
 	existingExpense.Amount = request.Amount
 	existingExpense.CategoryID = request.CategoryID
-	existingExpense.AccountID   = request.AccountID
+	existingExpense.AccountID = request.AccountID
 
 	if err := ctrl.service.UpdateExpense(existingExpense); err != nil {
 		logger.Error("Failed to update expense", zap.Error(err), zap.Int("expenseID", id))
