@@ -37,36 +37,22 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 		return
 	}
 
-	// 1) Attempt to retrieve the file
-	file, fileHeader, err := c.Request.FormFile("file") // key="file"
-	var fileURL string
-	if err == nil && file != nil {
-
-		// Example: Validate the file type (only image or PDF)
-		allowedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".pdf"}
-		const maxSize = 5 * 1024 * 1024
-		if err := upload.ValidateFile(fileHeader, allowedExtensions, maxSize); err != nil {
-			response.BadRequest(c, "File validation failed", err.Error())
-			return
-		}
-
-		// 2) Upload to Cloudinary
-		fileURL, err = ctrl.cloudinaryService.UploadFile(c.Request.Context(), file, fileHeader, "trackonomy/expenses")
-		if err != nil {
-			logger.Error("Failed to upload file to Cloudinary", zap.Error(err))
-			response.InternalServerError(c, "File upload failed", err.Error())
-			return
-		}
+	// Handle file upload
+	fileURL, err := ctrl.handleFileUpload(c)
+	if err != nil {
+		response.BadRequest(c, "File upload failed", err.Error())
+		return
 	}
 
 	expense := &Expense{
-		Title:       request.Title,
-		Description: request.Description,
-		Amount:      request.Amount,
-		UserID:      userID,
-		CategoryID:  request.CategoryID,
-		AccountID:   request.AccountID,
-		FileURL:     fileURL,
+		Title:           request.Title,
+		Description:     request.Description,
+		Amount:          request.Amount,
+		UserID:          userID,
+		CategoryID:      request.CategoryID,
+		AccountID:       request.AccountID,
+		FileURL:         fileURL,
+		TransactionType: TransactionType(request.TransactionType),
 	}
 
 	if err := ctrl.service.CreateExpense(expense); err != nil {
@@ -153,25 +139,12 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 		return
 	}
 
-	// Attempt to retrieve an uploaded file
-	file, fileHeader, fileErr := c.Request.FormFile("file")
-	var fileURL string
-	if fileErr == nil && file != nil {
-		// Validate file
-		allowedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".pdf"}
-		const maxSize = 5 * 1024 * 1024 // 5 MB
-		if err := upload.ValidateFile(fileHeader, allowedExtensions, maxSize); err != nil {
-			response.BadRequest(c, "File validation failed", err.Error())
-			return
-		}
-
-		// Upload to Cloudinary
-		fileURL, err = ctrl.cloudinaryService.UploadFile(c.Request.Context(), file, fileHeader, "trackonomy/expenses")
-		if err != nil {
-			logger.Error("Failed to upload file to Cloudinary", zap.Error(err))
-			response.InternalServerError(c, "File upload failed", err.Error())
-			return
-		}
+	fileURL, err := ctrl.handleFileUpload(c)
+	if err != nil {
+		response.BadRequest(c, "File upload failed", err.Error())
+		return
+	}
+	if fileURL != "" {
 		existingExpense.FileURL = fileURL
 	}
 
@@ -181,6 +154,7 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 	existingExpense.Amount = request.Amount
 	existingExpense.CategoryID = request.CategoryID
 	existingExpense.AccountID = request.AccountID
+	existingExpense.TransactionType = TransactionType(request.TransactionType)
 
 	if err := ctrl.service.UpdateExpense(existingExpense); err != nil {
 		logger.Error("Failed to update expense", zap.Error(err), zap.Int("expenseID", id))
@@ -203,4 +177,29 @@ func (ctrl *ExpenseController) DeleteExpense(c *gin.Context) {
 		return
 	}
 	response.Deleted(c, "Expense deleted successfully")
+}
+
+func (ctrl *ExpenseController) handleFileUpload(c *gin.Context) (string, error) {
+	file, fileHeader, err := c.Request.FormFile("file")
+	if err != nil {
+		// No file is provided; it's optional
+		return "", nil
+	}
+	if file == nil {
+		return "", nil
+	}
+
+	// Validate file
+	allowedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".pdf"}
+	const maxSize = 5 * 1024 * 1024 // 5 MB
+	if err := upload.ValidateFile(fileHeader, allowedExtensions, maxSize); err != nil {
+		return "", err
+	}
+
+	// Upload to Cloudinary
+	fileURL, err := ctrl.cloudinaryService.UploadFile(c.Request.Context(), file, fileHeader, "trackonomy/expenses")
+	if err != nil {
+		return "", err
+	}
+	return fileURL, nil
 }
