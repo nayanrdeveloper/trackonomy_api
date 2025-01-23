@@ -8,11 +8,12 @@ import (
 )
 
 type Expense struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Amount      float64   `json:"amount"`
-	Date        time.Time `json:"date"`
+	ID              uint            `gorm:"primaryKey" json:"id"`
+	Title           string          `json:"title"`
+	Description     string          `json:"description"`
+	Amount          float64         `json:"amount"`
+	Date            time.Time       `json:"date"`
+	TransactionType TransactionType `json:"transaction_type" validate:"required,oneof=expense incoming"`
 
 	UserID uint      `json:"user_id"`
 	User   user.User `json:"-" gorm:"foreignKey:UserID"`
