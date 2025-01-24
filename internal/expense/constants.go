@@ -4,5 +4,5 @@ type TransactionType string
 
 const (
 	TransactionTypeExpense  TransactionType = "expense"
-	TransactionTypeIncoming TransactionType = "incoming"
+	TransactionTypeIncoming TransactionType = "income"
 )

@@ -13,7 +13,7 @@ type Expense struct {
 	Description     string          `json:"description"`
 	Amount          float64         `json:"amount"`
 	Date            time.Time       `json:"date"`
-	TransactionType TransactionType `json:"transaction_type" validate:"required,oneof=expense incoming"`
+	TransactionType TransactionType `json:"transaction_type" validate:"required,oneof=expense income"`
 
 	UserID uint      `json:"user_id"`
 	User   user.User `json:"-" gorm:"foreignKey:UserID"`
