@@ -127,6 +127,18 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 		return
 	}
 
+	// Retrieve userID from context (adjust based on your authentication implementation)
+	userID, exists := c.Get("userID")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "User not authenticated", nil)
+		return
+	}
+
+	if _, ok := userID.(uint); !ok {
+		response.Error(c, http.StatusUnauthorized, "Invalid user ID", nil)
+		return
+	}
+
 	// Retrieve existing expense from DB
 	existingExpense, err := ctrl.service.GetExpenseByID(uint(id))
 	if err != nil {
@@ -139,6 +151,7 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 		return
 	}
 
+	// Handle file upload
 	fileURL, err := ctrl.handleFileUpload(c)
 	if err != nil {
 		response.BadRequest(c, "File upload failed", err.Error())
@@ -156,12 +169,28 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 	existingExpense.AccountID = request.AccountID
 	existingExpense.TransactionType = TransactionType(request.TransactionType)
 
+	// Log the update action
+	logger.Info("Updating Expense",
+		zap.Uint("ExpenseID", existingExpense.ID),
+		zap.Uint("CategoryID", existingExpense.CategoryID),
+		zap.Uint("AccountID", existingExpense.AccountID),
+	)
+
 	if err := ctrl.service.UpdateExpense(existingExpense); err != nil {
 		logger.Error("Failed to update expense", zap.Error(err), zap.Int("expenseID", id))
 		response.InternalServerError(c, "Could not update expense", err.Error())
 		return
 	}
-	response.Updated(c, "Expense updated successfully", existingExpense)
+
+	// Re-fetch the updated expense with associations for response
+	updatedExpense, err := ctrl.service.GetExpenseByID(uint(id))
+	if err != nil {
+		logger.Error("Failed to retrieve updated expense", zap.Error(err))
+		response.InternalServerError(c, "Could not retrieve updated expense", err.Error())
+		return
+	}
+
+	response.Updated(c, "Expense updated successfully", updatedExpense)
 }
 
 func (ctrl *ExpenseController) DeleteExpense(c *gin.Context) {

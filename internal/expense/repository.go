@@ -2,6 +2,7 @@ package expense
 
 import (
 	"errors"
+	"time"
 	"trackonomy/internal/utils"
 
 	"gorm.io/gorm"
@@ -69,7 +70,21 @@ func (r *repository) Update(expense *Expense) error {
 	if expense == nil {
 		return errors.New("expense is nil")
 	}
-	return r.db.Save(expense).Error
+
+	// Define the fields to update explicitly
+	updates := map[string]interface{}{
+		"title":            expense.Title,
+		"description":      expense.Description,
+		"amount":           expense.Amount,
+		"category_id":      expense.CategoryID,
+		"account_id":       expense.AccountID,
+		"transaction_type": expense.TransactionType,
+		"file_url":         expense.FileURL,
+		"updated_at":       time.Now(),
+	}
+
+	// Perform the update without affecting preloaded associations
+	return r.db.Model(&Expense{}).Where("id = ?", expense.ID).Updates(updates).Error
 }
 
 // Delete removes an expense by its ID from the database.
