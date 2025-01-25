@@ -2,7 +2,6 @@ package account
 
 import (
 	"errors"
-
 	"gorm.io/gorm"
 )
 
@@ -70,7 +69,7 @@ func (r *repository) GetByID(id, userID uint) (*Account, error) {
 		return &acc, nil
 	}
 	// userID>0 => either global or user
-	err := r.db.Where("(id = ?) AND (is_global = true OR user_id = ?)", id, userID).
+	err := r.db.Where("id = ? AND (is_global = true OR user_id = ?)", id, userID).
 		First(&acc).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

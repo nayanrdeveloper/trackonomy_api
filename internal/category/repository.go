@@ -2,7 +2,6 @@ package category
 
 import (
 	"errors"
-
 	"gorm.io/gorm"
 )
 
@@ -58,7 +57,23 @@ func (r *repository) GetAll(userID uint) ([]Category, error) {
 // GetByID fetches a category by ID (and optionally checks user ownership).
 func (r *repository) GetByID(id, userID uint) (*Category, error) {
 	var cat Category
-	err := r.db.Where("id = ? AND user_id = ?", id, userID).First(&cat).Error
+	// If userID > 0, we want to ensure (user_id = userID OR is_global=true) with the same ID
+	// If userID=0 => only global
+	// We'll do a single approach: we only find the record if it's global or belongs to user.
+	if userID == 0 {
+		// userID=0 => check is_global = true
+		err := r.db.Where("id = ? AND is_global = true", id).First(&cat).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return &cat, nil
+	}
+	// userID>0 => either global or user
+	err := r.db.Where("id = ? AND (is_global = true OR user_id = ?)", id, userID).
+		First(&cat).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil

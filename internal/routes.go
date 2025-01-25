@@ -31,15 +31,15 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	categoryService := category.NewService(categoryRepo)
 	categoryController := category.NewCategoryController(categoryService)
 
-	// ====== Expense Setup ======
-	expenseRepo := expense.NewRepository(db)
-	expenseService := expense.NewService(expenseRepo)
-	expenseController := expense.NewExpenseController(expenseService, uploadService)
-
 	// ====== Account Setup ====== (NEW)
 	accountRepo := account.NewRepository(db)
 	accountService := account.NewService(accountRepo)
 	accountController := account.NewAccountController(accountService)
+
+	// ====== Expense Setup ======
+	expenseRepo := expense.NewRepository(db)
+	expenseService := expense.NewService(expenseRepo, categoryRepo, accountRepo)
+	expenseController := expense.NewExpenseController(expenseService, uploadService)
 
 	// ====== API Routes ======
 	api := router.Group("/api")

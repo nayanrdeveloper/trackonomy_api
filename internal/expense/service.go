@@ -2,7 +2,12 @@ package expense
 
 import (
 	"errors"
+	"trackonomy/internal/account"
+	"trackonomy/internal/category"
+	"trackonomy/internal/logger"
 	"trackonomy/internal/utils"
+
+	"go.uber.org/zap"
 )
 
 type Service interface {
@@ -16,11 +21,13 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
+	repo         Repository
+	categoryRepo category.Repository
+	accountRepo  account.Repository
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo: repo}
+func NewService(repo Repository, categoryRepo category.Repository, accountRepo account.Repository) Service {
+	return &service{repo: repo, categoryRepo: categoryRepo, accountRepo: accountRepo}
 }
 
 func (s *service) CreateExpense(expense *Expense) error {
@@ -53,7 +60,53 @@ func (s *service) UpdateExpense(expense *Expense) error {
 	if expense == nil || expense.ID == 0 {
 		return errors.New("invalid expense")
 	}
+
+	// Validate that the new CategoryID exists
+	if err := s.validateCategoryID(expense.CategoryID, expense.UserID); err != nil {
+		return err
+	}
+
+	// Validate that the new AccountID exists
+	if err := s.validateAccountID(expense.AccountID, expense.UserID); err != nil {
+		return err
+	}
+
+	expense.Category = nil
+	expense.Account = nil
+
+	// Log the update action
+	logger.Info("Updating Expense",
+		zap.Uint("ExpenseID", expense.ID),
+		zap.Uint("CategoryID", expense.CategoryID),
+		zap.Uint("AccountID", expense.AccountID),
+	)
+
+	// Perform the update
 	return s.repo.Update(expense)
+}
+
+func (s *service) validateCategoryID(categoryID uint, userId uint) error {
+	category, err := s.categoryRepo.GetByID(categoryID, userId)
+	if err != nil {
+		logger.Error("Failed to validate CategoryID", zap.Error(err))
+		return errors.New("invalid CategoryID")
+	}
+	if category == nil {
+		return errors.New("invalid CategoryID")
+	}
+	return nil
+}
+
+func (s *service) validateAccountID(accountID uint, userId uint) error {
+	account, err := s.accountRepo.GetByID(accountID, userId) // Assuming 0 for global or adjust as needed
+	if err != nil {
+		logger.Error("Failed to validate AccountID", zap.Error(err))
+		return errors.New("invalid AccountID")
+	}
+	if account == nil {
+		return errors.New("invalid AccountID")
+	}
+	return nil
 }
 
 func (s *service) DeleteExpense(id uint) error {
