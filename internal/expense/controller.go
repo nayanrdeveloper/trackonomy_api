@@ -49,6 +49,7 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 		Description:     request.Description,
 		Amount:          request.Amount,
 		UserID:          userID,
+		Date:            request.Date,
 		CategoryID:      request.CategoryID,
 		AccountID:       request.AccountID,
 		FileURL:         fileURL,
@@ -167,6 +168,7 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 	existingExpense.Amount = request.Amount
 	existingExpense.CategoryID = request.CategoryID
 	existingExpense.AccountID = request.AccountID
+	existingExpense.Date = request.Date
 	existingExpense.TransactionType = TransactionType(request.TransactionType)
 
 	// Log the update action

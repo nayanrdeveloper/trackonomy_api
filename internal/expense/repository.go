@@ -76,6 +76,7 @@ func (r *repository) Update(expense *Expense) error {
 		"title":            expense.Title,
 		"description":      expense.Description,
 		"amount":           expense.Amount,
+		"date":             expense.Date,
 		"category_id":      expense.CategoryID,
 		"account_id":       expense.AccountID,
 		"transaction_type": expense.TransactionType,
