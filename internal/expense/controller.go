@@ -6,7 +6,6 @@ import (
 	"trackonomy/internal/dto"
 	"trackonomy/internal/logger"
 	"trackonomy/internal/response"
-	"trackonomy/internal/upload"
 	"trackonomy/internal/utils"
 	"trackonomy/internal/validators"
 
@@ -15,12 +14,11 @@ import (
 )
 
 type ExpenseController struct {
-	service           Service
-	cloudinaryService upload.CloudinaryService
+	service Service
 }
 
-func NewExpenseController(service Service, cs upload.CloudinaryService) *ExpenseController {
-	return &ExpenseController{service: service, cloudinaryService: cs}
+func NewExpenseController(service Service) *ExpenseController {
+	return &ExpenseController{service: service}
 }
 
 func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
@@ -37,13 +35,6 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 		return
 	}
 
-	// Handle file upload
-	fileURL, err := ctrl.handleFileUpload(c)
-	if err != nil {
-		response.BadRequest(c, "File upload failed", err.Error())
-		return
-	}
-
 	expense := &Expense{
 		Title:           request.Title,
 		Description:     request.Description,
@@ -52,7 +43,7 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 		Date:            request.Date,
 		CategoryID:      request.CategoryID,
 		AccountID:       request.AccountID,
-		FileURL:         fileURL,
+		FileURL:         request.FileURL,
 		TransactionType: TransactionType(request.TransactionType),
 	}
 
@@ -152,16 +143,6 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 		return
 	}
 
-	// Handle file upload
-	fileURL, err := ctrl.handleFileUpload(c)
-	if err != nil {
-		response.BadRequest(c, "File upload failed", err.Error())
-		return
-	}
-	if fileURL != "" {
-		existingExpense.FileURL = fileURL
-	}
-
 	// Update other fields
 	existingExpense.Title = request.Title
 	existingExpense.Description = request.Description
@@ -208,29 +189,4 @@ func (ctrl *ExpenseController) DeleteExpense(c *gin.Context) {
 		return
 	}
 	response.Deleted(c, "Expense deleted successfully")
-}
-
-func (ctrl *ExpenseController) handleFileUpload(c *gin.Context) (string, error) {
-	file, fileHeader, err := c.Request.FormFile("file")
-	if err != nil {
-		// No file is provided; it's optional
-		return "", nil
-	}
-	if file == nil {
-		return "", nil
-	}
-
-	// Validate file
-	allowedExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".pdf"}
-	const maxSize = 5 * 1024 * 1024 // 5 MB
-	if err := upload.ValidateFile(fileHeader, allowedExtensions, maxSize); err != nil {
-		return "", err
-	}
-
-	// Upload to Cloudinary
-	fileURL, err := ctrl.cloudinaryService.UploadFile(c.Request.Context(), file, fileHeader, "trackonomy/expenses")
-	if err != nil {
-		return "", err
-	}
-	return fileURL, nil
 }

@@ -5,21 +5,26 @@ import (
 	"trackonomy/internal/account"
 	"trackonomy/internal/auth"
 	"trackonomy/internal/category"
+	"trackonomy/internal/cloudinary"
 	"trackonomy/internal/expense"
-	"trackonomy/internal/upload"
+	"trackonomy/internal/logger"
 	"trackonomy/internal/user"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 // RegisterRoutes sets up the API routes for the application.
 func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
-	uploadService, err := upload.NewCloudinaryService(cfg)
+	// ====== Cloudinary Setup (NEW) ======
+	cld, err := cloudinary.InitClient(cfg)
 	if err != nil {
-		panic("Failed to create Cloudinary service: " + err.Error())
+		logger.Fatal("Failed to initialize Cloudinary client", zap.Error(err))
 	}
+	cloudinaryService := cloudinary.NewCloudinaryService(cld)
+	cloudinaryController := cloudinary.NewCloudinaryController(cloudinaryService)
 
 	// ====== User Setup ======
 	userRepo := user.NewRepository(db)
@@ -39,7 +44,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// ====== Expense Setup ======
 	expenseRepo := expense.NewRepository(db)
 	expenseService := expense.NewService(expenseRepo, categoryRepo, accountRepo)
-	expenseController := expense.NewExpenseController(expenseService, uploadService)
+	expenseController := expense.NewExpenseController(expenseService)
 
 	// ====== API Routes ======
 	api := router.Group("/api")
@@ -65,6 +70,13 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		{
 			accountRoutes.POST("/global", accountController.CreateGlobalAccount)
 			accountRoutes.GET("/global", accountController.GetAllGlobalAccounts)
+		}
+
+		// ====== Public Upload Endpoint (NEW) ======
+		uploadRoutes := api.Group("/upload")
+		{
+			// Endpoint: POST /api/upload/image
+			uploadRoutes.POST("/image", cloudinaryController.UploadImage)
 		}
 
 		// ====== Protected Endpoints (JWT middleware) ======

@@ -19,7 +19,6 @@ type Config struct {
 	DBPort      string
 	DBSSLMode   string
 
-	// Cloudinary config
 	CloudinaryCloudName string
 	CloudinaryAPIKey    string
 	CloudinaryAPISecret string
