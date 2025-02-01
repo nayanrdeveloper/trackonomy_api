@@ -8,6 +8,7 @@ type ExpenseRequest struct {
 	Amount          float64   `json:"amount" binding:"required" validate:"required,gt=0"`
 	TransactionType string    `json:"transaction_type" binding:"required" validate:"required,oneof=expense income"`
 	Date            time.Time `json:"date" binding:"required" validate:"required"`
+	FileURL         string    `json:"file_url"`
 
 	CategoryID uint `json:"category_id" validate:"required,gt=0"`
 	AccountID  uint `json:"account_id" validate:"required,gt=0"`
